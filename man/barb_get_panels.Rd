@@ -2,16 +2,23 @@
 % Please edit documentation in R/meta.R
 \name{barb_get_panels}
 \alias{barb_get_panels}
-\title{Get a tibble of panel names}
+\title{Get the list of panels}
 \usage{
-barb_get_panels()
+barb_get_panels(as_tibble = TRUE, token = NA_character_)
 }
-\value{
-A tibble of available panels
+\arguments{
+\item{as_tibble}{if TRUE cast result as a tibble object, otherwise list
+representation of the raw json response}
+
+\item{token}{character(1) barb API token. if NA try to find the session default token}
 }
 \description{
-Get a tibble of panel names
+Returns a complete list of panel codes and panel names.
+This is useful for finding the correct panel code when using panel
+code as a query parameter for other endpoints.
 }
 \examples{
-barb_get_panels()
+\dontrun{
+  barb_get_panels()
+}
 }

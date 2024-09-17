@@ -18,5 +18,23 @@ Imports:
     tibble,
     tidyjson,
     janitor,
-    stringr
+    stringr,
+    cli,
+    pkgconfig
 RoxygenNote: 7.2.3
+Suggests: 
+    mockery,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Collate: 
+    'audiences.R'
+    'barb.R'
+    'rexport-tibble.R'
+    'meta.R'
+    'metadata.R'
+    'programmes.R'
+    'spots.R'
+    'token.R'
+    'urls.R'
+    'utils-pipe.R'
+    'utils.R'
