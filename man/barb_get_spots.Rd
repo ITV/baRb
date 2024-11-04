@@ -11,7 +11,11 @@ barb_get_spots(
   consolidated = TRUE,
   use_reporting_days = FALSE,
   standardise_audiences = "",
-  metric = "audience_size_hundreds"
+  metric = "audience_size_hundreds",
+  retry_on_initial_no_response = FALSE,
+  fail_on_unsuccessful_pagination = FALSE,
+  retries = 5,
+  pause_before_retry = 90
 )
 }
 \arguments{
@@ -28,6 +32,14 @@ barb_get_spots(
 \item{standardise_audiences}{whether to standardise impacts by spot time length. Options are the default of no standardisation (""), "using_duration" or "using_rate_factors".}
 
 \item{metric}{Either "audience_size_hundreds" to return impacts, or "tvrs" to return TVR's}
+
+\item{retry_on_initial_no_response}{If the API responds with no data for the first page of results, should baRb retry? Pagination will always automatically retry to avoid incomplete datasets.}
+
+\item{fail_on_unsuccessful_pagination}{If the API has still not responded with data for a results page after all retries, should the function fail? FALSE will generate a warning but return results anyway.}
+
+\item{retries}{Number of times to retry a page request that has responded with no data}
+
+\item{pause_before_retry}{Time in seconds to pause before retrying. Helps to avoid a quick succession of consecutive failed queries that can trigger rate limiting.}
 }
 \value{
 A tibble of TV spots

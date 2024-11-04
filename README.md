@@ -9,7 +9,7 @@ Functions for working with BARB's TV spot API
 ### Installation
 
 ```
-remotes::install_github("ITV/baRb")
+remotes::install_github("neilcharles/baRb")
 ```
 
 ### Getting started
@@ -35,7 +35,7 @@ And a spot list for a specific advertiser with:
 barb_get_spots(
   min_transmission_date = "2023-01-01",
   max_transmission_date = "2023-01-31",
-  advertiser_name = "HAYS TRAVEL")
+  advertiser_name = "hays_travel")
 ```
 
 Official documentation for BARB's API can be found [here](https://barb-api.co.uk/api-docs).

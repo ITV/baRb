@@ -66,10 +66,21 @@ barb_query_api <- function(url, query = list()){
 
   token = barb_login()
 
-  response <- httr::GET(url = url,
-                        httr::add_headers(Authorization = paste0('Bearer ',
-                                                                 httr::content(token, as = "parsed")$access)),
-                        query = query)
+  # If no queries have been passed then this is a pagination so run without the 'query' option
+  # You can't pass query = list() because httr will URL encode the pagination URL, which the API doesn't like
+  if(length(query) > 0){
+    response <- httr::GET(url = url,
+                          httr::add_headers(Authorization = paste0('Bearer ',
+                                                                   httr::content(token, as = "parsed")$access)),
+                          query = query)
+  } else {
+    response <- httr::GET(url = url,
+                          httr::add_headers(Authorization = paste0('Bearer ',
+                                                                   httr::content(token, as = "parsed")$access)))
+  }
+
+  # Writes the raw return from httr::GET() to a working directory tempfile for debugging
+  # readr::write_rds(response, tempfile(tmpdir = getwd(), fileext = ".rds"))
 
   raw_json <- response %>%
     httr::content()

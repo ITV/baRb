@@ -7,6 +7,10 @@
 #' @param use_reporting_days whether to use a standard 24 hour clock or the BARB reporting clock. Defaults to FALSE (standard 24 hour clock).
 #' @param standardise_audiences whether to standardise impacts by spot time length. Options are the default of no standardisation (""), "using_duration" or "using_rate_factors".
 #' @param metric Either "audience_size_hundreds" to return impacts, or "tvrs" to return TVR's
+#' @param retry_on_initial_no_response If the API responds with no data for the first page of results, should baRb retry? Pagination will always automatically retry to avoid incomplete datasets.
+#' @param fail_on_unsuccessful_pagination If the API has still not responded with data for a results page after all retries, should the function fail? FALSE will generate a warning but return results anyway.
+#' @param pause_before_retry Time in seconds to pause before retrying. Helps to avoid a quick succession of consecutive failed queries that can trigger rate limiting.
+#' @param retries Number of times to retry a page request that has responded with no data
 #'
 #' @return A tibble of TV spots
 #' @export
@@ -19,22 +23,50 @@ barb_get_spots <- function(min_transmission_date = NULL,
                            consolidated = TRUE,
                            use_reporting_days = FALSE,
                            standardise_audiences = "",
-                           metric = "audience_size_hundreds"){
+                           metric = "audience_size_hundreds",
+                           retry_on_initial_no_response = FALSE,
+                           fail_on_unsuccessful_pagination = FALSE,
+                           retries = 5,
+                           pause_before_retry = 90){
 
-  api_result <- barb_query_api(
-    barb_url_spots(),
-    list(
-      "min_transmission_date" = min_transmission_date,
-      "max_transmission_date" = max_transmission_date,
-      "advertiser_name" = advertiser_name,
-      "limit" = "5000",
-      "consolidated" = consolidated,
-      "use_reporting_days" = use_reporting_days,
-      "standardise_audiences" = standardise_audiences
+  success <- FALSE
+  i <- 0
+
+  message(glue::glue("Running {advertiser_name} from {min_transmission_date} to {max_transmission_date}..."))
+
+  while(!success & i < retries){
+
+    api_result <- barb_query_api(
+      barb_url_spots(),
+      list(
+        "min_transmission_date" = min_transmission_date,
+        "max_transmission_date" = max_transmission_date,
+        "advertiser_name" = advertiser_name,
+        "limit" = "5000",
+        "consolidated" = consolidated,
+        "use_reporting_days" = use_reporting_days,
+        "standardise_audiences" = standardise_audiences
+      )
     )
-  )
 
-  if(length(api_result$json$events)==0) return(NULL)
+    if(length(api_result$json$events)>0 | !retry_on_initial_no_response){
+      success <- TRUE
+    } else {
+      message("BARB API responded with no data on first contact. Trying again.")
+      Sys.sleep(pause_before_retry)
+    }
+
+    i <- i+1
+  }
+
+  if(length(api_result$json$events)==0){
+    if(!retry_on_initial_no_response){
+      warning("No spots returned OR THE API FAILED TO RESPOND PROPERLY. Try setting `retry_on_initial_no_response = TRUE` to make sure.")
+    } else {
+      message("No spots returned by the API for the selected dates")
+    }
+    return(NULL)
+  }
 
   spots <- process_spot_json(api_result, metric = metric)
 
@@ -46,16 +78,29 @@ barb_get_spots <- function(min_transmission_date = NULL,
 
     api_result <- barb_query_api(api_result$next_url)
 
-    if(is.null(api_result$json$events)){  #Needed in case a page contains no data. Queried with BARB why this happens.
+    # if(length(api_result$json$events)!=5000) browser()
+    if(is.null(api_result$json$events) | length(api_result$json$events)==0){  #Needed in case a page contains no data. Queried with BARB why this happens.
 
-      warning("BARB API responded with no data while paginating. Trying again.")
+      i <- 0
 
       # try again
-      api_result <- barb_query_api(retry_url)
+      while((is.null(api_result$json$events) | length(api_result$json$events)==0) & i < retries){
+
+        message("BARB API responded with no data while paginating. Trying again.")
+        Sys.sleep(pause_before_retry)
+
+        api_result <- barb_query_api(retry_url)
+        i <- i+1
+      }
 
       # Fail if unsuccessful
-      if(is.null(api_result$json$events)){  #Needed in case a page contains no data. Queried with BARB why this happens.
-        stop(glue::glue("BARB API returned no data from {api_result$next_url}. Data request failed."))
+      if(is.null(api_result$json$events) | length(api_result$json$events)==0){  #Needed in case a page contains no data. Queried with BARB why this happens.
+        if(fail_on_unsuccessful_pagination){
+          stop(glue::glue("BARB API returned no data from {api_result$next_url}. Data request failed."))
+        } else {
+          warning("Pagination returned no results after retries but fail_on_unsuccessful_pagination = FALSE so returning results anyway.")
+        }
+
       }
     }
 
@@ -66,8 +111,12 @@ barb_get_spots <- function(min_transmission_date = NULL,
         api_page[, names(spots)[!names(spots) %in% names(api_page)]] <- NA
       }
 
+      if(nrow(api_page) > 0){ #needed in case of failed pagination
         spots <- spots %>%
           dplyr::union_all(api_page)
+      }
+
+      message(glue::glue("Total spots: {nrow(spots)}"))
   }
 
   spots_macro_true <- spots |>
@@ -75,6 +124,8 @@ barb_get_spots <- function(min_transmission_date = NULL,
 
   spots_macro_false <- spots |>
     dplyr::filter(is_macro_region==FALSE)
+
+  message(glue::glue("Removing duplicated spots..."))
 
   # Remove all universes except Online Multiple Screens Network for spots that have multiple universes
   spots_all <- spots_macro_false |>

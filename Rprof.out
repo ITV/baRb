@@ -1,0 +1,7 @@
+sample.interval=20000
+"readLines" "summaryRprof" 
+"print.default" "print" "print.data.frame" "<Anonymous>" 
+"saveRDS" "doTryCatch" "tryCatchOne" "tryCatchList" "tryCatch" "FUN" "lapply" ".rs.explorer.saveCache" 
+"saveRDS" "doTryCatch" "tryCatchOne" "tryCatchList" "tryCatch" "FUN" "lapply" ".rs.explorer.saveCache" 
+"saveRDS" "doTryCatch" "tryCatchOne" "tryCatchList" "tryCatch" "FUN" "lapply" ".rs.explorer.saveCache" 
+"saveRDS" "doTryCatch" "tryCatchOne" "tryCatchList" "tryCatch" "FUN" "lapply" ".rs.explorer.saveCache" 
