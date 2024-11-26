@@ -11,6 +11,7 @@
 #' @param fail_on_unsuccessful_pagination If the API has still not responded with data for a results page after all retries, should the function fail? FALSE will generate a warning but return results anyway.
 #' @param pause_before_retry Time in seconds to pause before retrying. Helps to avoid a quick succession of consecutive failed queries that can trigger rate limiting.
 #' @param retries Number of times to retry a page request that has responded with no data
+#' @param async should the async API be used?
 #'
 #' @return A tibble of TV spots
 #' @export
@@ -22,22 +23,59 @@ barb_get_spots <- function(min_transmission_date = NULL,
                            advertiser_name = NULL,
                            consolidated = TRUE,
                            use_reporting_days = FALSE,
-                           standardise_audiences = "",
+                           standardise_audiences = NULL,
                            metric = "audience_size_hundreds",
                            retry_on_initial_no_response = FALSE,
                            fail_on_unsuccessful_pagination = FALSE,
                            retries = 5,
-                           pause_before_retry = 90){
+                           pause_before_retry = 90,
+                           async = FALSE){
 
   success <- FALSE
   i <- 0
 
   message(glue::glue("Running {advertiser_name} from {min_transmission_date} to {max_transmission_date}..."))
 
-  while(!success & i < retries){
+  if(!async){
+    message("Using sync api")
+    while(!success & i < retries){
 
+      api_result <- barb_query_api(
+        barb_url_spots(),
+        list(
+          "min_transmission_date" = min_transmission_date,
+          "max_transmission_date" = max_transmission_date,
+          "advertiser_name" = advertiser_name,
+          "limit" = "5000",
+          "consolidated" = consolidated,
+          "use_reporting_days" = use_reporting_days,
+          "standardise_audiences" = standardise_audiences
+        )
+      )
+
+      if(length(api_result$json$events)>0 | !retry_on_initial_no_response){
+        success <- TRUE
+      } else {
+        message("BARB API responded with no data on first contact. Trying again.")
+        Sys.sleep(pause_before_retry)
+      }
+
+      i <- i+1
+    }
+
+    if(length(api_result$json$events)==0){
+      if(!retry_on_initial_no_response){
+        warning("No spots returned OR THE API FAILED TO RESPOND PROPERLY. Try setting `retry_on_initial_no_response = TRUE` to make sure.")
+      } else {
+        message("No spots returned by the API for the selected dates")
+      }
+      return(NULL)
+    }
+
+  } else {
+    message("Using async api")
     api_result <- barb_query_api(
-      barb_url_spots(),
+      barb_url_spots(async = async),
       list(
         "min_transmission_date" = min_transmission_date,
         "max_transmission_date" = max_transmission_date,
@@ -46,27 +84,12 @@ barb_get_spots <- function(min_transmission_date = NULL,
         "consolidated" = consolidated,
         "use_reporting_days" = use_reporting_days,
         "standardise_audiences" = standardise_audiences
-      )
-    )
+      ),
+      async = async
+  )
 
-    if(length(api_result$json$events)>0 | !retry_on_initial_no_response){
-      success <- TRUE
-    } else {
-      message("BARB API responded with no data on first contact. Trying again.")
-      Sys.sleep(pause_before_retry)
-    }
-
-    i <- i+1
   }
 
-  if(length(api_result$json$events)==0){
-    if(!retry_on_initial_no_response){
-      warning("No spots returned OR THE API FAILED TO RESPOND PROPERLY. Try setting `retry_on_initial_no_response = TRUE` to make sure.")
-    } else {
-      message("No spots returned by the API for the selected dates")
-    }
-    return(NULL)
-  }
 
   spots <- process_spot_json(api_result, metric = metric)
 

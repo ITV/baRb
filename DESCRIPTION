@@ -18,5 +18,6 @@ Imports:
     tibble,
     tidyjson,
     janitor,
-    stringr
+    stringr,
+    arrow
 RoxygenNote: 7.3.1
