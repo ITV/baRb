@@ -42,41 +42,41 @@ barb_get_programmes <- function(min_transmission_date = NULL,
 
     api_page <- process_programme_json(api_result)
 
-    programmes <- programmes %>%
+    programmes <- programmes |>
       dplyr::union_all(api_page)
   }
 
-  programmes %>%
+  programmes |>
     dplyr::filter(is_macro_region==macro_regions)
 }
 
 process_programme_json <- function(spot_json){
 
   #Extract spot list from json
-  spots_parsed <- spot_json$json$events %>%
-    tidyjson::as_tbl_json() %>%
-    tidyjson::spread_values(panel_region = tidyjson::jstring('panel', 'panel_region')) %>%
-    tidyjson::spread_values(is_macro_region = tidyjson::jlogical('panel', 'is_macro_region')) %>%
-    tidyjson::spread_values(station_name = tidyjson::jstring('station', 'station_name')) %>%
-    tidyjson::spread_values(programme_name = tidyjson::jstring('transmission_log_programme_name')) %>%
-    tidyjson::spread_values(programme_type = tidyjson::jstring('programme_type')) %>%
-    tidyjson::spread_values(standard_datetime = tidyjson::jstring('programme_start_datetime', 'standard_datetime')) %>%
+  spots_parsed <- spot_json$json$events |>
+    tidyjson::as_tbl_json() |>
+    tidyjson::spread_values(panel_region = tidyjson::jstring('panel', 'panel_region')) |>
+    tidyjson::spread_values(is_macro_region = tidyjson::jlogical('panel', 'is_macro_region')) |>
+    tidyjson::spread_values(station_name = tidyjson::jstring('station', 'station_name')) |>
+    tidyjson::spread_values(programme_name = tidyjson::jstring('transmission_log_programme_name')) |>
+    tidyjson::spread_values(programme_type = tidyjson::jstring('programme_type')) |>
+    tidyjson::spread_values(standard_datetime = tidyjson::jstring('programme_start_datetime', 'standard_datetime')) |>
     tidyjson::spread_values(programme_duration = tidyjson::jdouble('programme_duration'))
 
   #Get audience data for non-zero spots
-  audiences_parsed <- spots_parsed %>%
-    tidyjson::enter_object('audience_views') %>%
-    tidyjson::gather_array() %>%
-    tidyjson::spread_values(audience_code = tidyjson::jstring('audience_code')) %>%
-    tidyjson::spread_values(audience_description = tidyjson::jstring('description')) %>%
-    tidyjson::spread_values(audience_size_hundreds = tidyjson::jdouble('audience_size_hundreds')) %>%
-    tidyjson::spread_values(universe_size_hundreds = tidyjson::jdouble('target_size_in_hundreds')) %>%
+  audiences_parsed <- spots_parsed |>
+    tidyjson::enter_object('audience_views') |>
+    tidyjson::gather_array() |>
+    tidyjson::spread_values(audience_code = tidyjson::jstring('audience_code')) |>
+    tidyjson::spread_values(audience_description = tidyjson::jstring('description')) |>
+    tidyjson::spread_values(audience_size_hundreds = tidyjson::jdouble('audience_size_hundreds')) |>
+    tidyjson::spread_values(universe_size_hundreds = tidyjson::jdouble('target_size_in_hundreds')) |>
     tibble::as_tibble() |>
     dplyr::mutate(tvrs = audience_size_hundreds / universe_size_hundreds * 100)
 
   #Pivot audiences to columns and append zero rated spots again
-  spots_audiences <- audiences_parsed %>%
-    dplyr::mutate(kpi_var = audience_size_hundreds) %>%
+  spots_audiences <- audiences_parsed |>
+    dplyr::mutate(kpi_var = audience_size_hundreds) |>
     dplyr::select(document.id,
                   panel_region,
                   is_macro_region,
@@ -86,8 +86,9 @@ process_programme_json <- function(spot_json){
                   standard_datetime,
                   programme_duration,
                   audience_description,
-                  kpi_var) %>%
-    tidyr::pivot_wider(names_from = audience_description, values_from = kpi_var)
+                  kpi_var) |>
+    tidyr::pivot_wider(names_from = audience_description, values_from = kpi_var) |>
+    janitor::clean_names()
 
   spots_audiences[is.na(spots_audiences) & is.numeric(spots_audiences)] <- 0
   spots_audiences[is.na(spots_audiences) & is.character(spots_audiences)] <- ""
