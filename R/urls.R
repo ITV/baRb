@@ -14,8 +14,12 @@ barb_url_spots <- function(async = FALSE){
   }
 }
 
-barb_url_programmes <- function(){
-  glue::glue("{barb_url_root()}/programme_ratings")
+barb_url_programmes <- function(async = FALSE){
+  if(!async){
+    return(glue::glue("{barb_url_root()}/programme_ratings"))
+  } else {
+    return(glue::glue("{barb_url_root()}/async-batch/programme_ratings/"))
+  }
 }
 
 barb_url_meta_panels <- function(){
@@ -55,13 +59,12 @@ barb_login <- function(username = NULL, password = NULL) {
   auth_header
 }
 
-#' Submit a query to the BARB API (usually not called directly)
+#' Submit a query to the BARB API. Not called directly by users.
 #'
 #' @param url Endpoint URL
 #' @param query List of query parameters
 #'
 #' @return API results json if async = FALSE or download URLs if async = TRUE
-#' @export
 #'
 #' @examples
 #' # Example only. You'd use barb_get_spots() for this instead.
@@ -87,6 +90,14 @@ barb_query_api <- function(url, query = list(), async = FALSE, async_check_inter
     } else {
       response <- httr::GET(url = url,
                             httr::add_headers(Authorization = token))
+    }
+
+    if(response$status_code==504){
+      stop("Request timed out. If you're using the sync API, switch to async=TRUE instead. See the readme at https://github.com/ITV/baRb for more details.")
+    }
+
+    if(response$status_code!=200){
+      stop(glue::glue("Server responded with status {response$status_code}. Aborting query."))
     }
 
     # Writes the raw return from httr::GET() to a working directory tempfile for debugging
@@ -152,6 +163,86 @@ barb_query_api <- function(url, query = list(), async = FALSE, async_check_inter
 
     return(async_to_sync_format(output))
   }
+}
+
+
+#' Manages sync and async queries with retries for timeout problems on sync queries.
+#' Called by barb_get_spots() and barb_get_programmes(). Not called directly by users.
+#'
+#' @param query_url An API url e.g. barb_url_programmes()
+#' @param query_params A list of query parameters
+#' @param metric Either "audience_size_hundreds" to return impacts, or "tvrs" to return TVR's
+#' @param retry_on_initial_no_response If the API responds with no data for the first page of results, should baRb retry? Pagination will always automatically retry to avoid incomplete datasets.
+#' @param fail_on_unsuccessful_pagination If the API has still not responded with data for a results page after all retries, should the function fail? FALSE will generate a warning but return results anyway.
+#' @param pause_before_retry Time in seconds to pause before retrying. Helps to avoid a quick succession of consecutive failed queries that can trigger rate limiting.
+#' @param retries Number of times to retry a page request that has responded with no data
+#' @param async should the async API be used?
+#' @param json_processor A json processing function e.g. process_spot_json. Pass this without brackets().
+#'
+#' @return
+#'
+#' @examples
+barb_manage_query <- function(query_url = NULL,
+                              query_params = list(),
+                              metric = "audience_size_hundreds",
+                              retry_on_initial_no_response = FALSE,
+                              fail_on_unsuccessful_pagination = FALSE,
+                              retries = 5,
+                              pause_before_retry = 90,
+                              async = FALSE,
+                              json_processor = NULL) {
+
+  success <- FALSE
+  i <- 0
+
+  if (!async) {
+    message("Using sync api")
+      api_result <- barb_query_api(
+        query_url,
+        query_params,
+        async = async
+      )
+  } else {
+    message("Using async api")
+    api_result <- barb_query_api(
+      query_url,
+      query_params,
+      async = async
+    )
+  }
+
+  if (length(api_result$json$events) == 0) {
+    message("No spots returned for the selected dates")
+    return(NULL)
+  }
+
+  initial_output <- json_processor(api_result, metric = metric)
+
+  #Paginate if necessary
+  while(!is.null(api_result$next_url)){
+    message("Paginating")
+
+    retry_url <- api_result$next_url
+
+    api_result <- barb_query_api(api_result$next_url)
+
+    api_page <- json_processor(api_result, metric = metric)
+
+    # API pages sometimes return fewer audiences than initial calls. Add a col of NA's when this happens.
+    if(ncol(api_page) < ncol(initial_output)){
+      api_page[, names(initial_output)[!names(initial_output) %in% names(api_page)]] <- NA
+    }
+
+    if(nrow(api_page) > 0){ #needed in case of failed pagination
+      initial_output <- initial_output %>%
+        dplyr::union_all(api_page)
+    }
+
+    message(glue::glue("Total items: {nrow(initial_output)}"))
+  }
+
+  initial_output
+
 }
 
 # Downloads parquet files as tempfiles and then returns them as a dataframe

@@ -29,118 +29,29 @@ barb_get_spots <- function(min_transmission_date = NULL,
                            fail_on_unsuccessful_pagination = FALSE,
                            retries = 5,
                            pause_before_retry = 90,
-                           async = FALSE){
-
-  success <- FALSE
-  i <- 0
+                           async = TRUE){
 
   message(glue::glue("Running {advertiser_name} from {min_transmission_date} to {max_transmission_date}..."))
 
-  if(!async){
-    message("Using sync api")
-    while(!success & i < retries){
-
-      api_result <- barb_query_api(
-        barb_url_spots(),
-        list(
-          "min_transmission_date" = min_transmission_date,
-          "max_transmission_date" = max_transmission_date,
-          "advertiser_name" = advertiser_name,
-          "limit" = "5000",
-          "consolidated" = consolidated,
-          "use_reporting_days" = use_reporting_days,
-          "standardise_audiences" = standardise_audiences
-        )
-      )
-
-      if(length(api_result$json$events)>0 | !retry_on_initial_no_response){
-        success <- TRUE
-      } else {
-        message("BARB API responded with no data on first contact. Trying again.")
-        Sys.sleep(pause_before_retry)
-      }
-
-      i <- i+1
-    }
-
-    if(length(api_result$json$events)==0){
-      if(!retry_on_initial_no_response){
-        warning("No spots returned OR THE API FAILED TO RESPOND PROPERLY. Try setting `retry_on_initial_no_response = TRUE` to make sure.")
-      } else {
-        message("No spots returned by the API for the selected dates")
-      }
-      return(NULL)
-    }
-
-  } else {
-    message("Using async api")
-    api_result <- barb_query_api(
-      barb_url_spots(async = async),
-      list(
-        "min_transmission_date" = min_transmission_date,
-        "max_transmission_date" = max_transmission_date,
-        "advertiser_name" = advertiser_name,
-        "limit" = "5000",
-        "consolidated" = consolidated,
-        "use_reporting_days" = use_reporting_days,
-        "standardise_audiences" = standardise_audiences
-      ),
-      async = async
+  spots <- barb_manage_query(
+    query_url = barb_url_spots(async = async),
+    query_params = list(
+      "min_transmission_date" = min_transmission_date,
+      "max_transmission_date" = max_transmission_date,
+      "advertiser_name" = advertiser_name,
+      "limit" = "5000",
+      "consolidated" = consolidated,
+      "use_reporting_days" = use_reporting_days,
+      "standardise_audiences" = standardise_audiences
+    ),
+    metric = metric,
+    retry_on_initial_no_response = retry_on_initial_no_response,
+    fail_on_unsuccessful_pagination = fail_on_unsuccessful_pagination,
+    retries = retries,
+    pause_before_retry = pause_before_retry,
+    async = async,
+    json_processor = process_spot_json
   )
-
-  }
-
-
-  spots <- process_spot_json(api_result, metric = metric)
-
-  #Paginate if necessary
-  while(!is.null(api_result$next_url)){
-    message("Paginating")
-
-    retry_url <- api_result$next_url
-
-    api_result <- barb_query_api(api_result$next_url)
-
-    # if(length(api_result$json$events)!=5000) browser()
-    if(is.null(api_result$json$events) | length(api_result$json$events)==0){  #Needed in case a page contains no data. Queried with BARB why this happens.
-
-      i <- 0
-
-      # try again
-      while((is.null(api_result$json$events) | length(api_result$json$events)==0) & i < retries){
-
-        message("BARB API responded with no data while paginating. Trying again.")
-        Sys.sleep(pause_before_retry)
-
-        api_result <- barb_query_api(retry_url)
-        i <- i+1
-      }
-
-      # Fail if unsuccessful
-      if(is.null(api_result$json$events) | length(api_result$json$events)==0){  #Needed in case a page contains no data. Queried with BARB why this happens.
-        if(fail_on_unsuccessful_pagination){
-          stop(glue::glue("BARB API returned no data from {api_result$next_url}. Data request failed."))
-        } else {
-          warning("Pagination returned no results after retries but fail_on_unsuccessful_pagination = FALSE so returning results anyway.")
-        }
-
-      }
-    }
-
-      api_page <- process_spot_json(api_result, metric = metric)
-
-      # API pages sometimes return fewer audiences than initial calls. Add a col of NA's when this happens.
-      if(ncol(api_page) < ncol(spots)){
-        api_page[, names(spots)[!names(spots) %in% names(api_page)]] <- NA
-      }
-
-      if(nrow(api_page) > 0){ #needed in case of failed pagination
-        spots <- spots %>%
-          dplyr::union_all(api_page)
-      }
-
-      message(glue::glue("Total spots: {nrow(spots)}"))
-  }
 
   spots_macro_true <- spots |>
     dplyr::filter(is_macro_region==TRUE)

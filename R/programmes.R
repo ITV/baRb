@@ -6,6 +6,7 @@
 #' @param consolidated whether to return consolidated or only live viewing. Defaults to TRUE (consolidated).
 #' @param station_code A station code obtained with barb_get_stations()
 #' @param use_reporting_days whether to use a standard 24 hour clock or the BARB reporting clock. Defaults to FALSE (standard 24 hour clock).
+#' @param async should the async API be used?
 #'
 #' @return A tibble of TV spots
 #' @export
@@ -17,40 +18,35 @@ barb_get_programmes <- function(min_transmission_date = NULL,
                            station_code = "",
                            macro_regions = FALSE,
                            consolidated = TRUE,
-                           use_reporting_days = FALSE){
+                           use_reporting_days = FALSE,
+                           async = TRUE){
 
-  api_result <- barb_query_api(
-    barb_url_programmes(),
-    list(
-      "min_transmission_date" = min_transmission_date,
-      "max_transmission_date" = max_transmission_date,
-      "station_code" = station_code,
-      "limit" = "5000",
-      "consolidated" = consolidated,
-      "use_reporting_days" = use_reporting_days
-    )
+  message(glue::glue("Running programmes from {min_transmission_date} to {max_transmission_date}..."))
+
+  programmes <- barb_manage_query(
+    query_url = barb_url_programmes(async = async),
+    query_params = list(
+        "min_transmission_date" = min_transmission_date,
+        "max_transmission_date" = max_transmission_date,
+        "station_code" = station_code,
+        "limit" = "5000",
+        "consolidated" = consolidated,
+        "use_reporting_days" = use_reporting_days
+    ),
+    metric = "audience_size_hundreds",
+    retry_on_initial_no_response = retry_on_initial_no_response,
+    fail_on_unsuccessful_pagination = fail_on_unsuccessful_pagination,
+    retries = retries,
+    pause_before_retry = pause_before_retry,
+    async = async,
+    json_processor = process_programme_json
   )
-
-  if(is.null(api_result$json$events)) return(NULL)
-
-  programmes <- process_programme_json(api_result)
-
-  #Paginate if necessary
-  while(!is.null(api_result$next_url)){
-    message("Paginating")
-    api_result <- barb_query_api(api_result$next_url)
-
-    api_page <- process_programme_json(api_result)
-
-    programmes <- programmes |>
-      dplyr::union_all(api_page)
-  }
 
   programmes |>
     dplyr::filter(is_macro_region==macro_regions)
 }
 
-process_programme_json <- function(spot_json){
+process_programme_json <- function(spot_json, metric = "audience_size_hundreds"){
 
   #Extract spot list from json
   spots_parsed <- spot_json$json$events |>
