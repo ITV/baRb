@@ -15,9 +15,9 @@ barb_get_panels <- function(){
 
   result <- api_result$json %>%
     tidyjson::as_tbl_json() %>%
-    tidyjson::spread_values(panel_code = tidyjson::jstring('panel_code')) %>%
+    tidyjson::spread_values(panel_code = tidyjson::jinteger('panel_code')) %>%
     tidyjson::spread_values(panel_region = tidyjson::jstring('panel_region')) %>%
-    tidyjson::spread_values(is_macro_region = tidyjson::jstring('is_macro_region')) %>%
+    tidyjson::spread_values(is_macro_region = tidyjson::jlogical('is_macro_region')) %>%
     dplyr::select(panel_code, panel_region, is_macro_region) %>%
     tibble::as_tibble()
 
@@ -41,7 +41,7 @@ barb_get_stations <- function(){
 
   result <- api_result$json %>%
     tidyjson::as_tbl_json() %>%
-    tidyjson::spread_values(station_code = tidyjson::jstring('station_code')) %>%
+    tidyjson::spread_values(station_code = tidyjson::jinteger('station_code')) %>%
     tidyjson::spread_values(station_name = tidyjson::jstring('station_name')) %>%
     dplyr::select(station_code, station_name) %>%
     tibble::as_tibble()

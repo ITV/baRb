@@ -10,7 +10,8 @@ barb_get_programmes(
   station_code = "",
   macro_regions = FALSE,
   consolidated = TRUE,
-  use_reporting_days = FALSE
+  use_reporting_days = FALSE,
+  async = TRUE
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ barb_get_programmes(
 \item{consolidated}{whether to return consolidated or only live viewing. Defaults to TRUE (consolidated).}
 
 \item{use_reporting_days}{whether to use a standard 24 hour clock or the BARB reporting clock. Defaults to FALSE (standard 24 hour clock).}
+
+\item{async}{should the async API be used?}
 }
 \value{
 A tibble of TV spots

@@ -10,12 +10,13 @@ barb_get_spots(
   advertiser_name = NULL,
   consolidated = TRUE,
   use_reporting_days = FALSE,
-  standardise_audiences = "",
+  standardise_audiences = NULL,
   metric = "audience_size_hundreds",
   retry_on_initial_no_response = FALSE,
   fail_on_unsuccessful_pagination = FALSE,
   retries = 5,
-  pause_before_retry = 90
+  pause_before_retry = 90,
+  async = TRUE
 )
 }
 \arguments{
@@ -40,6 +41,8 @@ barb_get_spots(
 \item{retries}{Number of times to retry a page request that has responded with no data}
 
 \item{pause_before_retry}{Time in seconds to pause before retrying. Helps to avoid a quick succession of consecutive failed queries that can trigger rate limiting.}
+
+\item{async}{should the async API be used?}
 }
 \value{
 A tibble of TV spots

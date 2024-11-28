@@ -11,6 +11,8 @@
 #' @param fail_on_unsuccessful_pagination If the API has still not responded with data for a results page after all retries, should the function fail? FALSE will generate a warning but return results anyway.
 #' @param pause_before_retry Time in seconds to pause before retrying. Helps to avoid a quick succession of consecutive failed queries that can trigger rate limiting.
 #' @param retries Number of times to retry a page request that has responded with no data
+#' @param remove_duplicates BARB's API reports against multiple panel_region definitions, some of which create duplicate impacts (e.g. spots are reported against both macro and micro regions). Should duplicate impacts be removed?
+#' @param async should the async API be used?
 #'
 #' @return A tibble of TV spots
 #' @export
@@ -22,122 +24,54 @@ barb_get_spots <- function(min_transmission_date = NULL,
                            advertiser_name = NULL,
                            consolidated = TRUE,
                            use_reporting_days = FALSE,
-                           standardise_audiences = "",
+                           standardise_audiences = NULL,
                            metric = "audience_size_hundreds",
                            retry_on_initial_no_response = FALSE,
                            fail_on_unsuccessful_pagination = FALSE,
                            retries = 5,
-                           pause_before_retry = 90){
-
-  success <- FALSE
-  i <- 0
+                           pause_before_retry = 90,
+                           remove_duplicates = TRUE,
+                           async = TRUE){
 
   message(glue::glue("Running {advertiser_name} from {min_transmission_date} to {max_transmission_date}..."))
 
-  while(!success & i < retries){
+  spots <- barb_manage_query(
+    query_url = barb_url_spots(async = async),
+    query_params = list(
+      "min_transmission_date" = min_transmission_date,
+      "max_transmission_date" = max_transmission_date,
+      "advertiser_name" = advertiser_name,
+      "limit" = "5000",
+      "consolidated" = consolidated,
+      "use_reporting_days" = use_reporting_days,
+      "standardise_audiences" = standardise_audiences
+    ),
+    metric = metric,
+    retry_on_initial_no_response = retry_on_initial_no_response,
+    fail_on_unsuccessful_pagination = fail_on_unsuccessful_pagination,
+    retries = retries,
+    pause_before_retry = pause_before_retry,
+    async = async,
+    json_processor = process_spot_json
+  )
 
-    api_result <- barb_query_api(
-      barb_url_spots(),
-      list(
-        "min_transmission_date" = min_transmission_date,
-        "max_transmission_date" = max_transmission_date,
-        "advertiser_name" = advertiser_name,
-        "limit" = "5000",
-        "consolidated" = consolidated,
-        "use_reporting_days" = use_reporting_days,
-        "standardise_audiences" = standardise_audiences
-      )
-    )
+  if(remove_duplicates){
+    message(glue::glue("Removing duplicated spots..."))
 
-    if(length(api_result$json$events)>0 | !retry_on_initial_no_response){
-      success <- TRUE
-    } else {
-      message("BARB API responded with no data on first contact. Trying again.")
-      Sys.sleep(pause_before_retry)
-    }
+    # Remove spots that are duplicated by many reporting panels or by macro regions
+    spots_deduplicated <- spots |>
+      dplyr::group_by(station_name, standard_datetime) |>
+      dplyr::mutate(online_multi_is_present = any(panel_region=="Online Multiple Screen Network")) |>
+      dplyr::mutate(non_macro_is_present = any(is_macro_region==FALSE)) |>
+      dplyr::ungroup() |>
+      dplyr::filter(!(online_multi_is_present & panel_region!="Online Multiple Screen Network")) |>
+      dplyr::filter(!(non_macro_is_present & is_macro_region)) |>
+      dplyr::select(-online_multi_is_present, -non_macro_is_present)
 
-    i <- i+1
+    return(spots_deduplicated)
+  } else {
+    return(spots)
   }
-
-  if(length(api_result$json$events)==0){
-    if(!retry_on_initial_no_response){
-      warning("No spots returned OR THE API FAILED TO RESPOND PROPERLY. Try setting `retry_on_initial_no_response = TRUE` to make sure.")
-    } else {
-      message("No spots returned by the API for the selected dates")
-    }
-    return(NULL)
-  }
-
-  spots <- process_spot_json(api_result, metric = metric)
-
-  #Paginate if necessary
-  while(!is.null(api_result$next_url)){
-    message("Paginating")
-
-    retry_url <- api_result$next_url
-
-    api_result <- barb_query_api(api_result$next_url)
-
-    # if(length(api_result$json$events)!=5000) browser()
-    if(is.null(api_result$json$events) | length(api_result$json$events)==0){  #Needed in case a page contains no data. Queried with BARB why this happens.
-
-      i <- 0
-
-      # try again
-      while((is.null(api_result$json$events) | length(api_result$json$events)==0) & i < retries){
-
-        message("BARB API responded with no data while paginating. Trying again.")
-        Sys.sleep(pause_before_retry)
-
-        api_result <- barb_query_api(retry_url)
-        i <- i+1
-      }
-
-      # Fail if unsuccessful
-      if(is.null(api_result$json$events) | length(api_result$json$events)==0){  #Needed in case a page contains no data. Queried with BARB why this happens.
-        if(fail_on_unsuccessful_pagination){
-          stop(glue::glue("BARB API returned no data from {api_result$next_url}. Data request failed."))
-        } else {
-          warning("Pagination returned no results after retries but fail_on_unsuccessful_pagination = FALSE so returning results anyway.")
-        }
-
-      }
-    }
-
-      api_page <- process_spot_json(api_result, metric = metric)
-
-      # API pages sometimes return fewer audiences than initial calls. Add a col of NA's when this happens.
-      if(ncol(api_page) < ncol(spots)){
-        api_page[, names(spots)[!names(spots) %in% names(api_page)]] <- NA
-      }
-
-      if(nrow(api_page) > 0){ #needed in case of failed pagination
-        spots <- spots %>%
-          dplyr::union_all(api_page)
-      }
-
-      message(glue::glue("Total spots: {nrow(spots)}"))
-  }
-
-  spots_macro_true <- spots |>
-    dplyr::filter(is_macro_region==TRUE)
-
-  spots_macro_false <- spots |>
-    dplyr::filter(is_macro_region==FALSE)
-
-  message(glue::glue("Removing duplicated spots..."))
-
-  # Remove all universes except Online Multiple Screens Network for spots that have multiple universes
-  spots_all <- spots_macro_false |>
-    dplyr::mutate(panel_region_online_multi = ifelse(panel_region=="Online Multiple Screen Network",1,0)) |>
-    dplyr::group_by(station_name, standard_datetime) |>
-    dplyr::mutate(duplicate = dplyr::n() > 1) |>
-    dplyr::ungroup() |>
-    dplyr::filter(!duplicate | panel_region=="Online Multiple Screen Network") |>
-    dplyr::select(-panel_region_online_multi, -duplicate) |>
-    dplyr::union_all(spots_macro_true)
-
-  spots_all
 
 }
 
