@@ -11,6 +11,7 @@
 #' @param fail_on_unsuccessful_pagination If the API has still not responded with data for a results page after all retries, should the function fail? FALSE will generate a warning but return results anyway.
 #' @param pause_before_retry Time in seconds to pause before retrying. Helps to avoid a quick succession of consecutive failed queries that can trigger rate limiting.
 #' @param retries Number of times to retry a page request that has responded with no data
+#' @param remove_duplicates BARB's API reports against multiple panel_region definitions, some of which create duplicate impacts (e.g. spots are reported against both macro and micro regions). Should duplicate impacts be removed?
 #' @param async should the async API be used?
 #'
 #' @return A tibble of TV spots
@@ -29,6 +30,7 @@ barb_get_spots <- function(min_transmission_date = NULL,
                            fail_on_unsuccessful_pagination = FALSE,
                            retries = 5,
                            pause_before_retry = 90,
+                           remove_duplicates = TRUE,
                            async = TRUE){
 
   message(glue::glue("Running {advertiser_name} from {min_transmission_date} to {max_transmission_date}..."))
@@ -53,25 +55,23 @@ barb_get_spots <- function(min_transmission_date = NULL,
     json_processor = process_spot_json
   )
 
-  spots_macro_true <- spots |>
-    dplyr::filter(is_macro_region==TRUE)
+  if(remove_duplicates){
+    message(glue::glue("Removing duplicated spots..."))
 
-  spots_macro_false <- spots |>
-    dplyr::filter(is_macro_region==FALSE)
+    # Remove spots that are duplicated by many reporting panels or by macro regions
+    spots_deduplicated <- spots |>
+      dplyr::group_by(station_name, standard_datetime) |>
+      dplyr::mutate(online_multi_is_present = any(panel_region=="Online Multiple Screen Network")) |>
+      dplyr::mutate(non_macro_is_present = any(is_macro_region==FALSE)) |>
+      dplyr::ungroup() |>
+      dplyr::filter(!(online_multi_is_present & panel_region!="Online Multiple Screen Network")) |>
+      dplyr::filter(!(non_macro_is_present & is_macro_region)) |>
+      dplyr::select(-online_multi_is_present, -non_macro_is_present)
 
-  message(glue::glue("Removing duplicated spots..."))
-
-  # Remove spots that are duplicated by many reporting panels or by macro regions
-  spots_all <- spots |>
-    dplyr::group_by(station_name, standard_datetime) |>
-    dplyr::mutate(online_multi_is_present = any(panel_region=="Online Multiple Screen Network")) |>
-    dplyr::mutate(non_macro_is_present = any(is_macro_region==FALSE)) |>
-    dplyr::ungroup() |>
-    dplyr::filter(!(online_multi_is_present & panel_region!="Online Multiple Screen Network")) |>
-    dplyr::filter(!(non_macro_is_present & is_macro_region)) |>
-    dplyr::select(-online_multi_is_present, -non_macro_is_present)
-
-  spots_all
+    return(spots_deduplicated)
+  } else {
+    return(spots)
+  }
 
 }
 
