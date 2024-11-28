@@ -61,15 +61,15 @@ barb_get_spots <- function(min_transmission_date = NULL,
 
   message(glue::glue("Removing duplicated spots..."))
 
-  # Remove all universes except Online Multiple Screens Network for spots that have multiple universes
-  spots_all <- spots_macro_false |>
-    dplyr::mutate(panel_region_online_multi = ifelse(panel_region=="Online Multiple Screen Network",1,0)) |>
+  # Remove spots that are duplicated by many reporting panels or by macro regions
+  spots_all <- spots |>
     dplyr::group_by(station_name, standard_datetime) |>
-    dplyr::mutate(duplicate = dplyr::n() > 1) |>
+    dplyr::mutate(online_multi_is_present = any(panel_region=="Online Multiple Screen Network")) |>
+    dplyr::mutate(non_macro_is_present = any(is_macro_region==FALSE)) |>
     dplyr::ungroup() |>
-    dplyr::filter(!duplicate | panel_region=="Online Multiple Screen Network") |>
-    dplyr::select(-panel_region_online_multi, -duplicate) |>
-    dplyr::union_all(spots_macro_true)
+    dplyr::filter(!(online_multi_is_present & panel_region!="Online Multiple Screen Network")) |>
+    dplyr::filter(!(non_macro_is_present & is_macro_region)) |>
+    dplyr::select(-online_multi_is_present, -non_macro_is_present)
 
   spots_all
 

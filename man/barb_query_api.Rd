@@ -2,9 +2,9 @@
 % Please edit documentation in R/urls.R
 \name{barb_query_api}
 \alias{barb_query_api}
-\title{Submit a query to the BARB API (usually not called directly)}
+\title{Submit a query to the BARB API. Not called directly by users.}
 \usage{
-barb_query_api(url, query = list())
+barb_query_api(url, query = list(), async = FALSE, async_check_interval = 20)
 }
 \arguments{
 \item{url}{Endpoint URL}
@@ -12,10 +12,10 @@ barb_query_api(url, query = list())
 \item{query}{List of query parameters}
 }
 \value{
-API results json
+API results json if async = FALSE or download URLs if async = TRUE
 }
 \description{
-Submit a query to the BARB API (usually not called directly)
+Submit a query to the BARB API. Not called directly by users.
 }
 \examples{
 # Example only. You'd use barb_get_spots() for this instead.
