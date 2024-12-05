@@ -166,9 +166,9 @@ process_spot_json <- function(spot_json, metric = "audience_size_hundreds"){
 #' @export
 #'
 #' @examples
-barb_rollup_spots <- function(spots, plus_one = TRUE, hd = TRUE){
+barb_rollup_spots <- function(spots, plus_one = TRUE, hd = TRUE, granularity = "day"){
   spots_rollup <- spots %>%
-    dplyr::mutate(date = as.Date(standard_datetime)) %>%
+    dplyr::mutate(date = lubridate::floor_date(lubridate::as_datetime(standard_datetime), granularity)) %>%
     dplyr::mutate(dplyr::across(dplyr::where(is.numeric), ~replace(., is.na(.), 0)))
 
   spots_rollup <- spots_rollup %>%
@@ -197,7 +197,6 @@ barb_rollup_spots <- function(spots, plus_one = TRUE, hd = TRUE){
              advertiser_name,
              product_name,
              clearcast_web_address,
-             standard_datetime,
              date) %>%
     dplyr::summarise(impacts = sum(all_adults, na.rm = TRUE)) %>%
     dplyr::ungroup()
