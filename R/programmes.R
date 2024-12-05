@@ -12,7 +12,7 @@
 #' @export
 #'
 #' @examples
-#'
+#' # barb_get_programmes(min_transmission_date = '2024-01-01', max_transmission_date = '2024-01-01', station_code = 10)
 barb_get_programmes <- function(min_transmission_date = NULL,
                            max_transmission_date = NULL,
                            station_code = "",

@@ -67,14 +67,6 @@ barb_login <- function(username = NULL, password = NULL) {
 #' @return API results json if async = FALSE or download URLs if async = TRUE
 #'
 #' @examples
-#' # Example only. You'd use barb_get_spots() for this instead.
-#' raw_json <- barb_query_api(
-#'   "https://dev.barb-api.co.uk/api/v1/advertising_spots",
-#'   list(
-#'     min_transmission_date = "2022-01-01",
-#'     max_transmission_date = "2022-12-31",
-#'     advertiser_name = "PLAYMOBIL UK")
-#' )
 barb_query_api <- function(url, query = list(), async = FALSE, async_check_interval = 20){
 
   token = barb_login()

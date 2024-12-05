@@ -35,3 +35,6 @@ A tibble of TV spots
 \description{
 Get a tibble of spots from the BARB API
 }
+\examples{
+# barb_get_programmes(min_transmission_date = '2024-01-01', max_transmission_date = '2024-01-01', station_code = 10)
+}

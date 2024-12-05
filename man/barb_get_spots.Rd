@@ -16,6 +16,7 @@ barb_get_spots(
   fail_on_unsuccessful_pagination = FALSE,
   retries = 5,
   pause_before_retry = 90,
+  remove_duplicates = TRUE,
   async = TRUE
 )
 }
@@ -42,6 +43,8 @@ barb_get_spots(
 
 \item{pause_before_retry}{Time in seconds to pause before retrying. Helps to avoid a quick succession of consecutive failed queries that can trigger rate limiting.}
 
+\item{remove_duplicates}{BARB's API reports against multiple panel_region definitions, some of which create duplicate impacts (e.g. spots are reported against both macro and micro regions). Should duplicate impacts be removed?}
+
 \item{async}{should the async API be used?}
 }
 \value{
@@ -51,5 +54,5 @@ A tibble of TV spots
 Get a tibble of spots from the BARB API
 }
 \examples{
-barb_get_spots(min_transmission_date = "2023-01-01", max_transmission_date = "2023-01-31", advertiser_name = "hays_travel", metric = "audience_size_hundreds")
+#barb_get_spots(min_transmission_date = "2023-01-01", max_transmission_date = "2023-01-31", advertiser_name = "HAYS TRAVEL")
 }

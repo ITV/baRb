@@ -18,7 +18,7 @@
 #' @export
 #'
 #' @examples
-#' barb_get_spots(min_transmission_date = "2023-01-01", max_transmission_date = "2023-01-31", advertiser_name = "hays_travel", metric = "audience_size_hundreds")
+#' #barb_get_spots(min_transmission_date = "2023-01-01", max_transmission_date = "2023-01-31", advertiser_name = "HAYS TRAVEL")
 barb_get_spots <- function(min_transmission_date = NULL,
                            max_transmission_date = NULL,
                            advertiser_name = NULL,
@@ -156,7 +156,7 @@ process_spot_json <- function(spot_json, metric = "audience_size_hundreds"){
 }
 
 
-#' Roll up raw spot data by broadcast time for spot to web modelling
+#' Roll up raw spot data by broadcast time
 #'
 #' @param spots A raw spot file
 #' @param plus_one Roll up +1 channels? (T/F)

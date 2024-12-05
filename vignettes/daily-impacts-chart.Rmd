@@ -1,0 +1,33 @@
+---
+title: "daily-impacts-chart"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{daily-impacts-chart}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(baRb)
+library(ggplot2)
+
+spots <- barb_get_spots('2024-01-01',
+                        '2024-01-31',
+                        advertiser_name = 'HAYS TRAVEL',
+                        async = FALSE)
+
+spots_summary <- barb_rollup_spots(spots)
+
+spots_summary |> 
+  ggplot(aes(x = date, y = impacts)) +
+  geom_col() +
+  theme_minimal()
+
+```

@@ -2,7 +2,7 @@
 % Please edit documentation in R/spots.R
 \name{barb_rollup_spots}
 \alias{barb_rollup_spots}
-\title{Roll up raw spot data by broadcast time for spot to web modelling}
+\title{Roll up raw spot data by broadcast time}
 \usage{
 barb_rollup_spots(spots, plus_one = TRUE, hd = TRUE)
 }
@@ -17,5 +17,5 @@ barb_rollup_spots(spots, plus_one = TRUE, hd = TRUE)
 A tibble of rolled up spots
 }
 \description{
-Roll up raw spot data by broadcast time for spot to web modelling
+Roll up raw spot data by broadcast time
 }

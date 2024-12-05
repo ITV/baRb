@@ -17,13 +17,3 @@ API results json if async = FALSE or download URLs if async = TRUE
 \description{
 Submit a query to the BARB API. Not called directly by users.
 }
-\examples{
-# Example only. You'd use barb_get_spots() for this instead.
-raw_json <- barb_query_api(
-  "https://dev.barb-api.co.uk/api/v1/advertising_spots",
-  list(
-    min_transmission_date = "2022-01-01",
-    max_transmission_date = "2022-12-31",
-    advertiser_name = "PLAYMOBIL UK")
-)
-}

@@ -1,7 +1,7 @@
 Package: baRb
 Type: Package
 Title: Interface to BARB's Spot API
-Version: 0.2.1.9000
+Version: 0.2.1
 Author: Neil Charles
 Maintainer: Neil Charles <neil.charles@itv.com>
 Description: Interface to BARB's API
@@ -22,5 +22,9 @@ Imports:
     arrow
 RoxygenNote: 7.3.1
 Suggests: 
+    knitr,
+    rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
+URL: http://io.itv.com/baRb/
+VignetteBuilder: knitr
