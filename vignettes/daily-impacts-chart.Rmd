@@ -18,10 +18,13 @@ knitr::opts_chunk$set(
 library(baRb)
 library(ggplot2)
 
-spots <- barb_get_spots('2024-01-01',
-                        '2024-01-01',
-                        advertiser_name = 'ITV',
-                        async = FALSE)
+# Demo data loaded from package to avoid needing credentials
+# spots <- barb_get_spots('2024-01-01',
+#                         '2024-01-01',
+#                         advertiser_name = 'ITV',
+#                         async = FALSE)
+
+spots <- spots_demo
 
 head(spots)
 
