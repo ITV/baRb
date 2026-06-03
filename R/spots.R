@@ -13,6 +13,7 @@
 #' @param retries Number of times to retry a page request that has responded with no data
 #' @param remove_duplicates BARB's API reports against multiple panel_region definitions, some of which create duplicate impacts (e.g. spots are reported against both macro and micro regions). Should duplicate impacts be removed?
 #' @param async should the async API be used?
+#' @param last_updated_greater_than return only spots with a last amended date after "yyyy-mm-dd"
 #'
 #' @return A tibble of TV spots
 #' @export
@@ -31,7 +32,8 @@ barb_get_spots <- function(min_transmission_date = NULL,
                            retries = 5,
                            pause_before_retry = 90,
                            remove_duplicates = TRUE,
-                           async = TRUE){
+                           async = TRUE,
+                           last_updated_greater_than = NULL){
 
   message(glue::glue("Running {advertiser_name} from {min_transmission_date} to {max_transmission_date}..."))
 
@@ -44,7 +46,8 @@ barb_get_spots <- function(min_transmission_date = NULL,
       "limit" = "5000",
       "consolidated" = consolidated,
       "use_reporting_days" = use_reporting_days,
-      "standardise_audiences" = standardise_audiences
+      "standardise_audiences" = standardise_audiences,
+      "last_updated_greater_than" = last_updated_greater_than
     ),
     metric = metric,
     retry_on_initial_no_response = retry_on_initial_no_response,
@@ -54,6 +57,8 @@ barb_get_spots <- function(min_transmission_date = NULL,
     async = async,
     json_processor = process_spot_json
   )
+
+  if(is.null(spots)) return(spots)
 
   if(remove_duplicates){
     message(glue::glue("Removing duplicated spots..."))

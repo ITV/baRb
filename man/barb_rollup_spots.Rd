@@ -4,7 +4,7 @@
 \alias{barb_rollup_spots}
 \title{Roll up raw spot data by broadcast time}
 \usage{
-barb_rollup_spots(spots, plus_one = TRUE, hd = TRUE)
+barb_rollup_spots(spots, plus_one = TRUE, hd = TRUE, granularity = "day")
 }
 \arguments{
 \item{spots}{A raw spot file}

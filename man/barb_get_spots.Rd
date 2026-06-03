@@ -17,7 +17,8 @@ barb_get_spots(
   retries = 5,
   pause_before_retry = 90,
   remove_duplicates = TRUE,
-  async = TRUE
+  async = TRUE,
+  last_updated_greater_than = NULL
 )
 }
 \arguments{
@@ -46,6 +47,8 @@ barb_get_spots(
 \item{remove_duplicates}{BARB's API reports against multiple panel_region definitions, some of which create duplicate impacts (e.g. spots are reported against both macro and micro regions). Should duplicate impacts be removed?}
 
 \item{async}{should the async API be used?}
+
+\item{last_updated_greater_than}{return only spots with a last amended date after "yyyy-mm-dd"}
 }
 \value{
 A tibble of TV spots
