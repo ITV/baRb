@@ -94,7 +94,9 @@ process_spot_json <- function(spot_json, metric = "audience_size_hundreds"){
     tidyjson::spread_values(preceding_programme_name = tidyjson::jstring('preceding_programme_name')) %>%
     tidyjson::spread_values(spot_duration = tidyjson::jinteger('spot_duration')) %>%
     tidyjson::spread_values(break_type = tidyjson::jstring('break_type')) %>%
+    tidyjson::spread_values(broadcaster_spot_number = tidyjson::jstring('broadcaster_spot_number')) %>%
     tidyjson::spread_values(commercial_number = tidyjson::jstring('commercial_number')) %>%
+    tidyjson::spread_values(position_in_break = tidyjson::jstring('position_in_break')) %>%
     tidyjson::spread_values(advertiser_name = tidyjson::jstring('clearcast_information', 'advertiser_name')) %>%
     tidyjson::spread_values(product_name = tidyjson::jstring('clearcast_information', 'product_name')) %>%
     tidyjson::spread_values(clearcast_web_address = tidyjson::jstring('clearcast_information', 'clearcast_web_address'))
@@ -134,7 +136,9 @@ process_spot_json <- function(spot_json, metric = "audience_size_hundreds"){
                   preceding_programme_name,
                   spot_duration,
                   break_type,
+                  broadcaster_spot_number,
                   commercial_number,
+                  position_in_break,
                   advertiser_name,
                   product_name,
                   clearcast_web_address,
