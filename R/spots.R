@@ -32,13 +32,12 @@ barb_get_spots <- function(min_transmission_date = NULL,
                            retries = 5,
                            pause_before_retry = 90,
                            remove_duplicates = TRUE,
-                           async = TRUE,
                            last_updated_greater_than = NULL){
 
   message(glue::glue("Running {advertiser_name} from {min_transmission_date} to {max_transmission_date}..."))
 
   spots <- barb_manage_query(
-    query_url = barb_url_spots(async = async),
+    query_url = barb_url_spots(),
     query_params = list(
       "min_transmission_date" = min_transmission_date,
       "max_transmission_date" = max_transmission_date,
@@ -54,7 +53,6 @@ barb_get_spots <- function(min_transmission_date = NULL,
     fail_on_unsuccessful_pagination = fail_on_unsuccessful_pagination,
     retries = retries,
     pause_before_retry = pause_before_retry,
-    async = async,
     json_processor = process_spot_json
   )
 
@@ -82,34 +80,37 @@ barb_get_spots <- function(min_transmission_date = NULL,
 
 process_spot_json <- function(spot_json, metric = "audience_size_hundreds"){
 
-  #Extract spot list from json
-  spots_parsed <- spot_json$json$events %>%
-    tidyjson::as_tbl_json() %>%
-    tidyjson::spread_values(panel_region = tidyjson::jstring('panel', 'panel_region')) %>%
-    tidyjson::spread_values(is_macro_region = tidyjson::jlogical('panel', 'is_macro_region'))  %>%
-    tidyjson::spread_values(station_name = tidyjson::jstring('station', 'station_name')) %>%
-    tidyjson::spread_values(sales_house_name = tidyjson::jstring('sales_house', 'sales_house_name')) %>%
-    tidyjson::spread_values(standard_datetime = tidyjson::jstring('spot_start_datetime', 'standard_datetime')) %>%
-    tidyjson::spread_values(clearcast_commercial_title = tidyjson::jstring('clearcast_information', 'clearcast_commercial_title')) %>%
-    tidyjson::spread_values(preceding_programme_name = tidyjson::jstring('preceding_programme_name')) %>%
-    tidyjson::spread_values(spot_duration = tidyjson::jinteger('spot_duration')) %>%
-    tidyjson::spread_values(break_type = tidyjson::jstring('break_type')) %>%
-    tidyjson::spread_values(broadcaster_spot_number = tidyjson::jstring('broadcaster_spot_number')) %>%
-    tidyjson::spread_values(commercial_number = tidyjson::jstring('commercial_number')) %>%
-    tidyjson::spread_values(position_in_break = tidyjson::jstring('position_in_break')) %>%
-    tidyjson::spread_values(advertiser_name = tidyjson::jstring('clearcast_information', 'advertiser_name')) %>%
-    tidyjson::spread_values(product_name = tidyjson::jstring('clearcast_information', 'product_name')) %>%
-    tidyjson::spread_values(clearcast_web_address = tidyjson::jstring('clearcast_information', 'clearcast_web_address'))
+  # --- Flatten the top-level spot fields ---
+  spots_parsed <- purrr::map_dfr(spot_json$json$spot_impacts, function(ev) {
+    tibble::tibble(
+      panel_region                = purrr::pluck(ev, "panel", "panel_region", .default = NA_character_),
+      is_macro_region              = purrr::pluck(ev, "panel", "is_macro_region", .default = NA),
+      station_name                = purrr::pluck(ev, "station", "station_name", .default = NA_character_),
+      sales_house_name             = purrr::pluck(ev, "sales_house", "sales_house_name", .default = NA_character_),
+      standard_datetime            = purrr::pluck(ev, "spot_start_datetime", "standard_datetime", .default = NA_character_),
+      clearcast_commercial_title   = purrr::pluck(ev, "clearcast_information", "clearcast_commercial_title", .default = NA_character_),
+      preceding_programme_name     = purrr::pluck(ev, "preceding_programme_name", .default = NA_character_),
+      spot_duration                = purrr::pluck(ev, "spot_duration", .default = NA_integer_),
+      break_type                   = purrr::pluck(ev, "break_type", .default = NA_character_),
+      broadcaster_spot_number      = purrr::pluck(ev, "broadcaster_spot_number", .default = NA_character_),
+      commercial_number            = purrr::pluck(ev, "commercial_number", .default = NA_character_),
+      position_in_break            = purrr::pluck(ev, "position_in_break", .default = NA_character_),
+      advertiser_name              = purrr::pluck(ev, "clearcast_information", "advertiser_name", .default = NA_character_),
+      clearcast_web_address        = purrr::pluck(ev, "clearcast_information", "clearcast_web_address", .default = NA_character_),
+      audience_views               = list(purrr::pluck(ev, "audience_views", .default = list()))
+    )
+  }, .id = "spot_id")
 
-  #Get audience data for non-zero spots
+  # --- Expand the nested audience_views list-column ---
   audiences_parsed <- spots_parsed %>%
-    tidyjson::enter_object('audience_views') %>%
-    tidyjson::gather_array() %>%
-    tidyjson::spread_values(audience_code = tidyjson::jstring('audience_code')) %>%
-    tidyjson::spread_values(audience_description = tidyjson::jstring('description')) %>%
-    tidyjson::spread_values(audience_size_hundreds = tidyjson::jdouble('audience_size_hundreds')) %>%
-    tidyjson::spread_values(universe_size_hundreds = tidyjson::jdouble('target_size_in_hundreds')) %>%
-    tibble::as_tibble() |>
+    tidyr::unnest_longer(audience_views) %>%
+    dplyr::mutate(
+      audience_code            = purrr::map_chr(audience_views, ~ purrr::pluck(.x, "audience_code", .default = NA_character_)),
+      audience_description      = purrr::map_chr(audience_views, ~ purrr::pluck(.x, "description", .default = NA_character_)),
+      audience_size_hundreds     = purrr::map_dbl(audience_views, ~ purrr::pluck(.x, "audience_size_hundreds", .default = NA_real_)),
+      universe_size_hundreds      = purrr::map_dbl(audience_views, ~ purrr::pluck(.x, "target_size_in_hundreds", .default = NA_real_))
+    ) %>%
+    dplyr::select(-audience_views) %>%
     dplyr::mutate(tvrs = audience_size_hundreds / universe_size_hundreds * 100)
 
   #If all spots were zero rated, return result
@@ -127,7 +128,7 @@ process_spot_json <- function(spot_json, metric = "audience_size_hundreds"){
   #Pivot audiences to columns and append zero rated spots again
   spots_audiences <- audiences_parsed %>%
     dplyr::mutate(kpi_var = !!rlang::sym(metric)) %>%
-    dplyr::select(document.id,
+    dplyr::select(spot_id,
                   panel_region,
                   is_macro_region,
                   station_name,
@@ -140,7 +141,6 @@ process_spot_json <- function(spot_json, metric = "audience_size_hundreds"){
                   commercial_number,
                   position_in_break,
                   advertiser_name,
-                  product_name,
                   clearcast_web_address,
                   standard_datetime,
                   audience_description,
@@ -154,12 +154,15 @@ process_spot_json <- function(spot_json, metric = "audience_size_hundreds"){
 
   spots_all <- spots_audiences %>%
     dplyr::union_all(
-      dplyr::filter(spots_parsed_wider, !document.id %in% spots_audiences$document.id)
+      dplyr::filter(dplyr::select(spots_parsed_wider, -audience_views), !spot_id %in% spots_audiences$spot_id)
     ) %>%
     janitor::clean_names()
 
-  spots_all[is.na(spots_all) & is.numeric(spots_all)] <- 0
-  spots_all[is.na(spots_all) & is.character(spots_all)] <- ""
+  spots_all <- spots_all %>%
+    dplyr::mutate(
+      dplyr::across(where(is.numeric), ~ tidyr::replace_na(.x, 0)),
+      dplyr::across(where(is.character), ~ tidyr::replace_na(.x, ""))
+    )
 
   spots_all
 }
@@ -210,3 +213,4 @@ barb_rollup_spots <- function(spots, plus_one = TRUE, hd = TRUE, granularity = "
     dplyr::summarise(impacts = sum(all_adults, na.rm = TRUE)) %>%
     dplyr::ungroup()
 }
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
