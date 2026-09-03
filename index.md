@@ -2,17 +2,27 @@
 
 Functions for working with BARB’s TV spot API
 
+**HOTFIX 2026-09-03: This package has been patched to work with Barb’s
+API v3.0. Only the following functions are currently available.**
+
+    barb_get_advertisers()
+    barb_get_spots()
+
 ### Installation
 
     remotes::install_github("ITV/baRb")
 
 ### Getting started
 
-BaRb requires a username and password to be set using environment
-variables. Use these commands or set the values in your .Renviron file.
+BaRb requires a refresh token to be set using an environment variable.
 
-    Sys.setenv(BARB_API_USERNAME = "username")
-    Sys.setenv(BARB_API_PASSWORD = "password")
+See Barb’s [API
+documentation](https://documenter.getpostman.com/view/52530320/2sBYAswBkZ#4008ee2c-d497-4166-bcce-c03b0dd1dff4)
+to understand how to get a refresh token.
+
+Use this commands or set the value in your .Renviron file.
+
+    Sys.setenv(BARB_API_REFRESH_TOKEN = "TOKEN")
 
 Get a list of available advertisers with:
 
@@ -23,50 +33,7 @@ And a spot list for a specific advertiser with:
     barb_get_spots(
       min_transmission_date = "2024-01-01",
       max_transmission_date = "2024-01-01",
-      advertiser_name = "HAYS TRAVEL",
-      async = FALSE)
-
-Or programme data with:
-
-    barb_get_programmes(
-      min_transmission_date = "2024-01-01",
-      max_transmission_date = "2024-01-01",
-      station_code = 10,
-      async = FALSE
-    )
-
-Official documentation for BARB’s API can be found
-[here](https://barb-api.co.uk/api-docs).
-
-### Sync and async queries
-
-BARB’s API has two sets of endpoints. ‘Sync’ endpoints return data
-immediately as json while ‘async’ endpoints initiate a query that runs
-on the server and results are downloaded as fragmented parquet files by
-a second API query once they are ready.
-
-baRb wraps these two types of endpoints with a convenient switching
-option so that you can query either the sync or async endpoints and
-obtain a tibble of results in exactly the same format.
-
-The following code will use the async endpoint to run a query:
-
-    barb_get_spots(
-      min_transmission_date = "2024-01-01",
-      max_transmission_date = "2024-01-01",
-      advertiser_name = "HAYS TRAVEL",
-      async = TRUE)
-
-Sync endpoints return results faster for small queries but will easily
-time out.
-
-Functionality from previous versions of baRb that would retry timed-out
-sync queries has been removed. If a query times out you will now receive
-an error and a suggestion to switch to async=TRUE.
-
-Unless you’re building an interactive application that needs to run
-small queries very quickly, you’re probably better off using
-`async = TRUE` and the baRb package now defaults to `async = TRUE`.
+      advertiser_name = "HAYS TRAVEL")
 
 ### Why do I see the message “Removing duplicated spots”?
 

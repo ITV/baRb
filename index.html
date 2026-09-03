@@ -56,6 +56,9 @@
 <!-- badges: start -->
 <!-- badges: end -->
 <p>Functions for working with BARB’s TV spot API</p>
+<p><strong>HOTFIX 2026-09-03: This package has been patched to work with Barb’s API v3.0. Only the following functions are currently available.</strong></p>
+<pre><code><span><span class="fu"><a href="reference/barb_get_advertisers.html">barb_get_advertisers</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/barb_get_spots.html">barb_get_spots</a></span><span class="op">(</span><span class="op">)</span></span></code></pre>
 <div class="section level3">
 <h3 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h3>
@@ -64,45 +67,23 @@
 <div class="section level3">
 <h3 id="getting-started">Getting started<a class="anchor" aria-label="anchor" href="#getting-started"></a>
 </h3>
-<p>BaRb requires a username and password to be set using environment variables. Use these commands or set the values in your .Renviron file.</p>
-<pre><code><span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv</a></span><span class="op">(</span>BARB_API_USERNAME <span class="op">=</span> <span class="st">"username"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv</a></span><span class="op">(</span>BARB_API_PASSWORD <span class="op">=</span> <span class="st">"password"</span><span class="op">)</span></span></code></pre>
+<p>BaRb requires a refresh token to be set using an environment variable.</p>
+<p>See Barb’s <a href="https://documenter.getpostman.com/view/52530320/2sBYAswBkZ#4008ee2c-d497-4166-bcce-c03b0dd1dff4" class="external-link">API documentation</a> to understand how to get a refresh token.</p>
+<p>Use this commands or set the value in your .Renviron file.</p>
+<pre><code><span><span class="fu"><a href="https://rdrr.io/r/base/Sys.setenv.html" class="external-link">Sys.setenv</a></span><span class="op">(</span>BARB_API_REFRESH_TOKEN <span class="op">=</span> <span class="st">"TOKEN"</span><span class="op">)</span></span></code></pre>
 <p>Get a list of available advertisers with:</p>
 <pre><code><span><span class="fu"><a href="reference/barb_get_advertisers.html">barb_get_advertisers</a></span><span class="op">(</span><span class="op">)</span></span></code></pre>
 <p>And a spot list for a specific advertiser with:</p>
 <pre><code><span><span class="fu"><a href="reference/barb_get_spots.html">barb_get_spots</a></span><span class="op">(</span></span>
 <span>  min_transmission_date <span class="op">=</span> <span class="st">"2024-01-01"</span>,</span>
 <span>  max_transmission_date <span class="op">=</span> <span class="st">"2024-01-01"</span>,</span>
-<span>  advertiser_name <span class="op">=</span> <span class="st">"HAYS TRAVEL"</span>,</span>
-<span>  async <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre>
-<p>Or programme data with:</p>
-<pre><code><span><span class="fu"><a href="reference/barb_get_programmes.html">barb_get_programmes</a></span><span class="op">(</span></span>
-<span>  min_transmission_date <span class="op">=</span> <span class="st">"2024-01-01"</span>,</span>
-<span>  max_transmission_date <span class="op">=</span> <span class="st">"2024-01-01"</span>,</span>
-<span>  station_code <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>  async <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span></code></pre>
-<p>Official documentation for BARB’s API can be found <a href="https://barb-api.co.uk/api-docs" class="external-link">here</a>.</p>
-</div>
-<div class="section level3">
-<h3 id="sync-and-async-queries">Sync and async queries<a class="anchor" aria-label="anchor" href="#sync-and-async-queries"></a>
-</h3>
-<p>BARB’s API has two sets of endpoints. ‘Sync’ endpoints return data immediately as json while ‘async’ endpoints initiate a query that runs on the server and results are downloaded as fragmented parquet files by a second API query once they are ready.</p>
-<p>baRb wraps these two types of endpoints with a convenient switching option so that you can query either the sync or async endpoints and obtain a tibble of results in exactly the same format.</p>
-<p>The following code will use the async endpoint to run a query:</p>
-<pre><code><span><span class="fu"><a href="reference/barb_get_spots.html">barb_get_spots</a></span><span class="op">(</span></span>
-<span>  min_transmission_date <span class="op">=</span> <span class="st">"2024-01-01"</span>,</span>
-<span>  max_transmission_date <span class="op">=</span> <span class="st">"2024-01-01"</span>,</span>
-<span>  advertiser_name <span class="op">=</span> <span class="st">"HAYS TRAVEL"</span>,</span>
-<span>  async <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre>
-<p>Sync endpoints return results faster for small queries but will easily time out.</p>
-<p>Functionality from previous versions of baRb that would retry timed-out sync queries has been removed. If a query times out you will now receive an error and a suggestion to switch to async=TRUE.</p>
-<p>Unless you’re building an interactive application that needs to run small queries very quickly, you’re probably better off using <code>async = TRUE</code> and the baRb package now defaults to <code>async = TRUE</code>.</p>
+<span>  advertiser_name <span class="op">=</span> <span class="st">"HAYS TRAVEL"</span><span class="op">)</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="why-do-i-see-the-message-removing-duplicated-spots">Why do I see the message “Removing duplicated spots”?<a class="anchor" aria-label="anchor" href="#why-do-i-see-the-message-removing-duplicated-spots"></a>
 </h3>
-<p>when using <code><a href="reference/barb_get_spots.html">barb_get_spots()</a></code> you will see the message ‘Removing duplicated spots’ and the total number of rows returned by the function will be fewer than is reported by sync API status messages during the query. This difference is because BARB’s API returns data for many panel regions, which causes spot data to be duplicated. The baRb package filters panel regions and removes these duplicates for you.</p>
+<p>when using <code><a href="reference/barb_get_spots.html">barb_get_spots()</a></code> you will see the message ‘Removing duplicated spots’ and the total number of rows returned by the function will be fewer than is reported by sync API status messages during the query. This difference is because BARB’s API returns data for many panel regions, which causes spot data to be duplicated. The baRb package filters panel regions and removes these duplicates for you.
+</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="license">
@@ -139,7 +120,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

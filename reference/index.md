@@ -8,8 +8,6 @@
   : Get the list of available advertiser names
 - [`barb_get_panels()`](http://io.itv.com/baRb/reference/barb_get_panels.md)
   : Get a tibble of panel names
-- [`barb_get_programmes()`](http://io.itv.com/baRb/reference/barb_get_programmes.md)
-  : Get a tibble of spots from the BARB API
 - [`barb_get_spots()`](http://io.itv.com/baRb/reference/barb_get_spots.md)
   : Get a tibble of spots from the BARB API
 - [`barb_get_stations()`](http://io.itv.com/baRb/reference/barb_get_stations.md)

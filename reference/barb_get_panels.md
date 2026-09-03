@@ -16,5 +16,5 @@ A tibble of available panels
 
 ``` r
 barb_get_panels()
-#> Error in barb_login(): Username or password not set
+#> Error in barb_login(): Refresh token not set
 ```

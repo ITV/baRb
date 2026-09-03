@@ -52,7 +52,6 @@ Called by barb_get_spots() and barb_get_programmes(). Not called directly by use
 <span>  fail_on_unsuccessful_pagination <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  retries <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  pause_before_retry <span class="op">=</span> <span class="fl">90</span>,</span>
-<span>  async <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  json_processor <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -89,12 +88,12 @@ Called by barb_get_spots() and barb_get_programmes(). Not called directly by use
 <dd><p>Time in seconds to pause before retrying. Helps to avoid a quick succession of consecutive failed queries that can trigger rate limiting.</p></dd>
 
 
-<dt id="arg-async">async<a class="anchor" aria-label="anchor" href="#arg-async"></a></dt>
-<dd><p>should the async API be used?</p></dd>
-
-
 <dt id="arg-json-processor">json_processor<a class="anchor" aria-label="anchor" href="#arg-json-processor"></a></dt>
 <dd><p>A json processing function e.g. process_spot_json. Pass this without brackets().</p></dd>
+
+
+<dt id="arg-async">async<a class="anchor" aria-label="anchor" href="#arg-async"></a></dt>
+<dd><p>should the async API be used?</p></dd>
 
 </dl></div>
 
@@ -107,7 +106,7 @@ Called by barb_get_spots() and barb_get_programmes(). Not called directly by use
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

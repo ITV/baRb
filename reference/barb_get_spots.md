@@ -18,7 +18,6 @@ barb_get_spots(
   retries = 5,
   pause_before_retry = 90,
   remove_duplicates = TRUE,
-  async = TRUE,
   last_updated_greater_than = NULL
 )
 ```
@@ -87,13 +86,13 @@ barb_get_spots(
   which create duplicate impacts (e.g. spots are reported against both
   macro and micro regions). Should duplicate impacts be removed?
 
-- async:
-
-  should the async API be used?
-
 - last_updated_greater_than:
 
   return only spots with a last amended date after "yyyy-mm-dd"
+
+- async:
+
+  should the async API be used?
 
 ## Value
 

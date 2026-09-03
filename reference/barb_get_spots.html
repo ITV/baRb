@@ -54,7 +54,6 @@
 <span>  retries <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  pause_before_retry <span class="op">=</span> <span class="fl">90</span>,</span>
 <span>  remove_duplicates <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  async <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  last_updated_greater_than <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -111,12 +110,12 @@
 <dd><p>BARB's API reports against multiple panel_region definitions, some of which create duplicate impacts (e.g. spots are reported against both macro and micro regions). Should duplicate impacts be removed?</p></dd>
 
 
-<dt id="arg-async">async<a class="anchor" aria-label="anchor" href="#arg-async"></a></dt>
-<dd><p>should the async API be used?</p></dd>
-
-
 <dt id="arg-last-updated-greater-than">last_updated_greater_than<a class="anchor" aria-label="anchor" href="#arg-last-updated-greater-than"></a></dt>
 <dd><p>return only spots with a last amended date after "yyyy-mm-dd"</p></dd>
+
+
+<dt id="arg-async">async<a class="anchor" aria-label="anchor" href="#arg-async"></a></dt>
+<dd><p>should the async API be used?</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -138,7 +137,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

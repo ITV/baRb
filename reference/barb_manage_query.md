@@ -15,7 +15,6 @@ barb_manage_query(
   fail_on_unsuccessful_pagination = FALSE,
   retries = 5,
   pause_before_retry = 90,
-  async = FALSE,
   json_processor = NULL
 )
 ```
@@ -58,11 +57,11 @@ barb_manage_query(
   succession of consecutive failed queries that can trigger rate
   limiting.
 
-- async:
-
-  should the async API be used?
-
 - json_processor:
 
   A json processing function e.g. process_spot_json. Pass this without
   brackets().
+
+- async:
+
+  should the async API be used?
