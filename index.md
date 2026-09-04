@@ -2,8 +2,8 @@
 
 Functions for working with BARB’s TV spot API
 
-**HOTFIX 2026-09-03: This package has been patched to work with Barb’s
-API v3.0. Only the following functions are currently available.**
+*HOTFIX 2026-09-03: This package has been patched to work with Barb’s
+API v3.0. Only the following functions are currently available.*
 
     barb_get_advertisers()
     barb_get_spots()
