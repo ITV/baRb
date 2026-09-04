@@ -1,7 +1,7 @@
 Package: baRb
 Type: Package
 Title: Interface to BARB's Spot API
-Version: 0.2.1
+Version: 0.3.1
 Author: Neil Charles
 Maintainer: Neil Charles <neil.charles@itv.com>
 Description: Interface to BARB's API
